@@ -1,10 +1,13 @@
+import Database from "../config/db";
 import { generateUniqueId } from "../utils/intex";
 
 class TodoController {
   private todos: ITodo[] = [];
+  
 
-  public getTodos(): { data: ITodo[]; success: boolean } {
-    return { success: true, data: this.todos };
+  public async getTodos(): Promise<any> {
+    const todos = await Database.prisma.todo.findMany()
+    return { success: true, data: todos };
   }
   public getTodo(id: string): { data: any; success: boolean } {
     const found = this.todos.find((t) => t.id === id);
@@ -13,8 +16,15 @@ class TodoController {
     }
     return { success: true, data: found };
   }
-  public createTodo(todo: ITodo): { data: ITodo[]; success: boolean } {
+  public async createTodo(todo: ITodo): Promise<any> {
     const newId = generateUniqueId();
+    await Database.prisma.todo.create({
+      data: {
+        title: "fisrt",
+        completed: false,
+        userId: "asdfasdf",
+      },
+    });
     this.todos.push({ ...todo, id: newId });
     return { success: true, data: this.todos };
   }

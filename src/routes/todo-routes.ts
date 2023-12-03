@@ -10,7 +10,7 @@ class TodoRoutes {
     this.setupRoutes();
   }
   private setupRoutes() {
-    this.routes.get("/:id", ({params}) => this.todoController.getTodo(params.id));
+    this.routes.get("/:id", ({params,}) => this.todoController.getTodo(params.id));
     this.routes.delete("/:id", ({params}) => this.todoController.deleteTodo(params.id));
     this.routes.put("/:id", ({params, body}) => this.todoController.updateTodo(params.id, body));
     this.routes.post("/create", ({ body}) => this.todoController.createTodo(body as ITodo));
