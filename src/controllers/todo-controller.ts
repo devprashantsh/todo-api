@@ -1,55 +1,78 @@
+import { ElysiaConfig } from "elysia";
 import Database from "../config/db";
 import { generateUniqueId } from "../utils/intex";
 
 class TodoController {
   private todos: ITodo[] = [];
-  
 
   public async getTodos(): Promise<any> {
-    const todos = await Database.prisma.todo.findMany()
+    const todos = await Database.prisma.todo.findMany();
     return { success: true, data: todos };
   }
-  public getTodo(id: string): { data: any; success: boolean } {
-    const found = this.todos.find((t) => t.id === id);
+
+  public async getTodo({
+    jwt,
+    params,
+    cookie: { auth },
+    body,
+  }: any): Promise<{ data: any; success: boolean }> {
+    const found = await Database.prisma.todo.findUnique({
+      where: { id: Number(params.id) },
+    });
     if (!found) {
       return { success: false, data: null };
     }
     return { success: true, data: found };
   }
-  public async createTodo(todo: ITodo): Promise<any> {
-    const newId = generateUniqueId();
-    await Database.prisma.todo.create({
+
+  public async createTodo({ jwt,set, cookie: { auth }, body }: any): Promise<any> {
+    const profile = await jwt.verify(auth);
+    const todo = await Database.prisma.todo.create({
       data: {
-        title: "fisrt",
+        title: body.title,
         completed: false,
-        userId: "asdfasdf",
+        userId: profile.id,
       },
     });
-    this.todos.push({ ...todo, id: newId });
-    return { success: true, data: this.todos };
+    set.status = 201;
+    return { success: true, data: todo };
   }
-  public deleteTodo(id: string): { success: boolean; message: string } {
-    const found = this.todos.find((t) => t.id === id);
+
+  public async deleteTodo({
+    jwt,
+    params,
+    cookie: { auth },
+    body,
+  }: any): Promise<{ success: boolean; message: string }> {
+    const profile = await jwt.verify(auth);
+
+    const found = await Database.prisma.todo.findUnique({
+      where: { id: params.id, userId: profile.id },
+    });
     if (!found) {
       return { success: false, message: "Not Found" };
     }
-    this.todos = this.todos.filter((t) => t.id !== id);
+    await Database.prisma.todo.delete({
+      where: { id: params.id, userId: profile.id },
+    });
     return { success: true, message: "Deleted Successfully" };
   }
-  public updateTodo(
-    id: string,
-    todo: any
-  ): { success: boolean; message?: string } {
-    const found = this.todos.find((t) => t.id === id);
+
+  public async updateTodo({
+    jwt,
+    params,
+    cookie: { auth },
+    body,
+  }: any): Promise<{ success: boolean; message?: string }> {
+    const profile = await jwt.verify(auth);
+    const found = await Database.prisma.todo.findUnique({
+      where: { id: params.id, userId: profile.id },
+    });
     if (!found) {
       return { success: false, message: "Not Found" };
     }
-    const index = this.todos.indexOf(found);
-    this.todos[index] = { ...found, ...todo };
     return { success: true, message: "Updated Successfully" };
   }
 }
-
-[{ id: "asdfadf", title: "new task 1", description: "adfadfjhdfkjadhf" }];
 
 export default TodoController;
