@@ -56,7 +56,9 @@ class App {
           `Todo server is running at ${this.app.server?.hostname}:${this.app.server?.port}`
         );
       })
-
+      .onError(({ code }) => {
+        if (code === 'NOT_FOUND') return 'Route not found :('
+      })
       .listen(process.env.PORT || 4000);
   }
 }

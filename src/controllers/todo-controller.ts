@@ -1,31 +1,42 @@
-import { ElysiaConfig } from "elysia";
 import Database from "../config/db";
-import { generateUniqueId } from "../utils/intex";
 
 class TodoController {
   private todos: ITodo[] = [];
 
-  public async getTodos(): Promise<any> {
+  public async getAllTodos(): Promise<any> {
     const todos = await Database.prisma.todo.findMany();
+    return { success: true, data: todos };
+  }
+  public async getTodos({ jwt, cookie: { auth } }: any): Promise<any> {
+    const profile = await jwt.verify(auth);
+    const todos = await Database.prisma.todo.findMany({
+      where: { userId: profile.id },
+    });
     return { success: true, data: todos };
   }
 
   public async getTodo({
     jwt,
-    params,
     cookie: { auth },
-    body,
+    params,
   }: any): Promise<{ data: any; success: boolean }> {
+    const profile = await jwt.verify(auth);
+
     const found = await Database.prisma.todo.findUnique({
       where: { id: Number(params.id) },
     });
-    if (!found) {
+    if (!found || found.userId !== profile.id) {
       return { success: false, data: null };
     }
     return { success: true, data: found };
   }
 
-  public async createTodo({ jwt,set, cookie: { auth }, body }: any): Promise<any> {
+  public async createTodo({
+    jwt,
+    set,
+    cookie: { auth },
+    body,
+  }: any): Promise<any> {
     const profile = await jwt.verify(auth);
     const todo = await Database.prisma.todo.create({
       data: {
@@ -47,13 +58,13 @@ class TodoController {
     const profile = await jwt.verify(auth);
 
     const found = await Database.prisma.todo.findUnique({
-      where: { id: params.id, userId: profile.id },
+      where: { id: Number(params.id), userId: profile.id },
     });
     if (!found) {
       return { success: false, message: "Not Found" };
     }
     await Database.prisma.todo.delete({
-      where: { id: params.id, userId: profile.id },
+      where: { id: Number(params.id), userId: profile.id },
     });
     return { success: true, message: "Deleted Successfully" };
   }
@@ -66,7 +77,7 @@ class TodoController {
   }: any): Promise<{ success: boolean; message?: string }> {
     const profile = await jwt.verify(auth);
     const found = await Database.prisma.todo.findUnique({
-      where: { id: params.id, userId: profile.id },
+      where: { id: Number(params.id), userId: profile.id },
     });
     if (!found) {
       return { success: false, message: "Not Found" };
